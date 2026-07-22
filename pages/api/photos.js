@@ -37,9 +37,9 @@ export default async function handler(req, res) {
           siteId: data.siteId || "", caption: data.caption || "",
           takenAt: data.takenAt || new Date().toISOString(),
           url: Array.isArray(data.url) ? data.url : data.url ? [data.url] : [],
-          syncStatus: "synced", createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
         });
-        res.status(201).json({ id: docRef.id, ...data, syncStatus: "synced" });
+        res.status(201).json({ id: docRef.id, ...data });
       } catch (error) {
         console.error("Error creating photo:", error);
         res.status(500).json({ error: "Failed to create photo" });
@@ -49,7 +49,6 @@ export default async function handler(req, res) {
     case "PUT":
       try {
         const { id, ...updates } = req.body;
-        updates.syncStatus = "synced";
         await db.collection("photos").doc(id).update(updates);
         res.status(200).json({ id, ...updates });
       } catch (error) {

@@ -38,9 +38,9 @@ export default async function handler(req, res) {
           siteId: data.siteId || "", title: data.title || "",
           assignedTo: data.assignedTo || "", dueDate: data.dueDate || new Date().toISOString(),
           priority: data.priority || "medium", status: data.status || "pending",
-          syncStatus: "synced", createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
         });
-        res.status(201).json({ id: docRef.id, ...data, syncStatus: "synced" });
+        res.status(201).json({ id: docRef.id, ...data });
       } catch (error) {
         console.error("Error creating task:", error);
         res.status(500).json({ error: "Failed to create task" });

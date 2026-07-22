@@ -477,15 +477,19 @@ function PhotosTab({ photos, siteId, refresh }) {
   const [showForm, setShowForm] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [caption, setCaption] = useState("");
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
 
   function handleFileChange(e) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
+    setPreviews(selected.map((f) => URL.createObjectURL(f)));
+  }
+
+  function removeFile(idx) {
+    setFiles((p) => p.filter((_, i) => i !== idx));
+    setPreviews((p) => p.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e) {
@@ -493,19 +497,19 @@ function PhotosTab({ photos, siteId, refresh }) {
     setUploading(true);
     try {
       let urls = [];
-      if (file) {
+      if (files.length > 0) {
         const fd = new FormData();
-        fd.append("file", file);
+        files.forEach((f) => fd.append("file", f));
         const uploadRes = await authFetch("/api/upload", { method: "POST", body: fd });
         if (!uploadRes.ok) { toast.error("Image upload failed"); setUploading(false); return; }
-        const { url } = await uploadRes.json();
-        urls = [url];
+        const data = await uploadRes.json();
+        urls = data.urls;
       }
       const res = await authFetch("/api/photos", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ siteId, caption, url: urls, takenAt: new Date().toISOString() }),
       });
-      if (res.ok) { toast.success("Added!"); setShowForm(false); setCaption(""); setFile(null); setPreview(null); refresh(); }
+      if (res.ok) { toast.success(`${urls.length || 1} photo(s) added!`); setShowForm(false); setCaption(""); setFiles([]); setPreviews([]); refresh(); }
     } catch { toast.error("Upload failed"); }
     finally { setUploading(false); }
   }
@@ -526,13 +530,22 @@ function PhotosTab({ photos, siteId, refresh }) {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div><input value={caption} onChange={(e) => setCaption(e.target.value)} required className="input" placeholder="Caption" /></div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-              <input type="file" accept="image/*" onChange={handleFileChange} className="input file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+              <input type="file" accept="image/*" multiple onChange={handleFileChange} className="input file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
             </div>
-            {preview && <img src={preview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg" />}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative group">
+                    <img src={src} alt={`Preview ${i + 1}`} className="w-full aspect-square object-cover rounded-lg" />
+                    <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 bg-red-600 text-white p-0.5 rounded opacity-0 group-hover:opacity-100"><HiOutlineTrash className="w-3 h-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
-              <button type="submit" disabled={uploading} className="btn-primary text-sm">{uploading ? "Uploading..." : "Add"}</button>
-              <button type="button" onClick={() => { setShowForm(false); setFile(null); setPreview(null); }} className="btn-outline text-sm">Cancel</button>
+              <button type="submit" disabled={uploading} className="btn-primary text-sm">{uploading ? "Uploading..." : `Upload ${files.length || ""} Photo${files.length > 1 ? "s" : ""}`}</button>
+              <button type="button" onClick={() => { setShowForm(false); setFiles([]); setPreviews([]); }} className="btn-outline text-sm">Cancel</button>
             </div>
           </form>
         </div>

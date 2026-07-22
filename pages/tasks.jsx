@@ -155,6 +155,14 @@ export default function Tasks() {
                 <input name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="input" placeholder="Worker name" />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="input">
+                  
+                  <option value="all">Select worker</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                 <select name="priority" value={formData.priority} onChange={handleChange} className="input">
                   {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}

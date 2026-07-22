@@ -16,8 +16,8 @@ export default function Photos() {
   const [lightbox, setLightbox] = useState(null);
   const [searchSite, setSearchSite] = useState("");
   const [formData, setFormData] = useState({ siteId: "", caption: "" });
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => { Promise.all([fetchPhotos(), fetchSites()]); }, []);
@@ -34,10 +34,14 @@ export default function Photos() {
   function handleChange(e) { setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value })); }
 
   function handleFileChange(e) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
+    setPreviews(selected.map((f) => URL.createObjectURL(f)));
+  }
+
+  function removeFile(idx) {
+    setFiles((p) => p.filter((_, i) => i !== idx));
+    setPreviews((p) => p.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e) {
@@ -45,13 +49,13 @@ export default function Photos() {
     setUploading(true);
     try {
       let urls = [];
-      if (file) {
+      if (files.length > 0) {
         const fd = new FormData();
-        fd.append("file", file);
+        files.forEach((f) => fd.append("file", f));
         const uploadRes = await authFetch("/api/upload", { method: "POST", body: fd });
         if (!uploadRes.ok) { toast.error("Image upload failed"); setUploading(false); return; }
-        const { url } = await uploadRes.json();
-        urls = [url];
+        const data = await uploadRes.json();
+        urls = data.urls;
       }
       const res = await authFetch("/api/photos", {
         method: "POST",
@@ -64,11 +68,11 @@ export default function Photos() {
         }),
       });
       if (res.ok) {
-        toast.success("Photo added!");
+        toast.success(`${urls.length || 1} photo(s) added!`);
         setShowForm(false);
         setFormData({ siteId: "", caption: "" });
-        setFile(null);
-        setPreview(null);
+        setFiles([]);
+        setPreviews([]);
         fetchPhotos();
       } else { toast.error("Failed to add photo"); }
     } catch { toast.error("Error adding photo"); }
@@ -116,12 +120,17 @@ export default function Photos() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-                <input type="file" accept="image/*" onChange={handleFileChange} className="input file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+                <input type="file" accept="image/*" multiple onChange={handleFileChange} className="input file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
               </div>
-              {preview && (
-                <div className="sm:col-span-2">
-                  <img src={preview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg" />
+              {previews.length > 0 && (
+                <div className="sm:col-span-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {previews.map((src, i) => (
+                    <div key={i} className="relative group">
+                      <img src={src} alt={`Preview ${i + 1}`} className="w-full aspect-square object-cover rounded-lg" />
+                      <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 bg-red-600 text-white p-0.5 rounded opacity-0 group-hover:opacity-100"><HiOutlineTrash className="w-3 h-3" /></button>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="sm:col-span-2">
@@ -129,8 +138,8 @@ export default function Photos() {
                 <input name="caption" value={formData.caption} onChange={handleChange} required className="input" placeholder="Describe this photo..." />
               </div>
               <div className="sm:col-span-2 flex gap-2">
-                <button type="submit" disabled={uploading} className="btn-primary">{uploading ? "Uploading..." : "Upload"}</button>
-                <button type="button" onClick={() => { setShowForm(false); setFile(null); setPreview(null); }} className="btn-outline">Cancel</button>
+                <button type="submit" disabled={uploading} className="btn-primary">{uploading ? "Uploading..." : `Upload ${files.length || ""} Photo${files.length > 1 ? "s" : ""}`}</button>
+                <button type="button" onClick={() => { setShowForm(false); setFiles([]); setPreviews([]); }} className="btn-outline">Cancel</button>
               </div>
             </form>
           </div>
