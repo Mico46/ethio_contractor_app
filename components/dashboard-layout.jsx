@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }) {
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="w-5 h-5 shrink-0" />
                   {item.label}
                 </a>
               );

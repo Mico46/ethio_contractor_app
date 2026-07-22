@@ -163,8 +163,12 @@ export default function Sites() {
                   <span className={`badge ${STATUS_STYLE[site.status] || "badge-primary"}`}>{site.status}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">Client: {site.clientName}</p>
-                <p className="text-sm text-muted-foreground mb-3">Location: {site.locationName}</p>
+                <p className="text-sm text-muted-foreground mb-1">Location: {site.locationName}</p>
+                 <p className="text-sm text-muted-foreground mb-1">Start Date: {new Date(site.startDate).toLocaleDateString("en-US")}</p>
+                <p className="text-sm text-muted-foreground mb-3">End Date: {new Date(site.targetEndDate).toLocaleDateString("en-US")}</p>
+               
                 <p className="text-sm font-medium text-gray-900 mb-2">{formatETB(site.budget || 0)}</p>
+                
                 <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
                   <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${site.progress *100 || 0}%` }} />
                 </div>
