@@ -166,9 +166,9 @@ export default function Sites() {
                 <p className="text-sm text-muted-foreground mb-3">Location: {site.locationName}</p>
                 <p className="text-sm font-medium text-gray-900 mb-2">{formatETB(site.budget || 0)}</p>
                 <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${site.progress || 0}%` }} />
+                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${site.progress *100 || 0}%` }} />
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">{site.progress || 0}% complete</p>
+                <p className="text-xs text-muted-foreground mb-3">{site.progress *100 || 0}% complete</p>
                 <div className="flex gap-2">
                   <a href={`/site/${site.id}`} className="btn-primary text-xs flex-1 text-center">
                     <HiOutlineExternalLink className="w-3.5 h-3.5 mr-1 inline" /> View
