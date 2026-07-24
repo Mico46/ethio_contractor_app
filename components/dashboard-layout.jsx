@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth-context";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import {
   HiOutlineViewGrid,
   HiOutlineMap,
@@ -17,6 +18,7 @@ import {
   HiOutlineCog,
   HiOutlineCollection,
   HiOutlineCash,
+  HiOutlineCalculator,
 } from "react-icons/hi";
 
 const NAV_ITEMS = [
@@ -25,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/tasks", label: "Tasks", icon: HiOutlineClipboardList },
   { href: "/materials", label: "Materials", icon: HiOutlineCollection },
   { href: "/expenses", label: "Expenses", icon: HiOutlineCash },
+  { href: "/boq", label: "BOQ & Unit Rates", icon: HiOutlineCalculator },
   { href: "/users", label: "HR & Staff", icon: HiOutlineUsers },
   { href: "/photos", label: "Photos", icon: HiOutlinePhotograph },
   { href: "/logs", label: "Logs", icon: HiOutlineDocumentText },
@@ -53,13 +56,14 @@ export default function DashboardLayout({ children }) {
         />
       )}
 
+      {/* Stationary Fixed Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-sidebar transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-sidebar transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-16 px-5 border-b border-white/10">
+          <div className="flex items-center justify-between h-16 px-5 border-b border-white/10 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-white font-bold text-sm">EC</span>
@@ -81,7 +85,7 @@ export default function DashboardLayout({ children }) {
               const Icon = item.icon;
               const isActive = currentPath === item.href;
               return (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -93,12 +97,12 @@ export default function DashboardLayout({ children }) {
                 >
                   <Icon className="w-5 h-5 shrink-0" />
                   {item.label}
-                </a>
+                </Link>
               );
             })}
           </nav>
 
-          <div className="p-3 border-t border-white/10">
+          <div className="p-3 border-t border-white/10 shrink-0">
             <div className="flex items-center gap-3 px-3 py-2">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-medium">
                 {user?.name?.charAt(0) || "U"}
@@ -121,8 +125,9 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 bg-white border-b border-border h-16 flex items-center px-4 lg:px-6">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
+        <header className="sticky top-0 z-20 bg-white border-b border-border h-16 flex items-center px-4 lg:px-6 shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-gray-500 hover:text-gray-700 lg:hidden mr-3"
