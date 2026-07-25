@@ -150,10 +150,10 @@ export default function Tasks() {
                   {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-              <div>
+             {/*  <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
                 <input name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="input" placeholder="Worker name" />
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
                 <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="input">

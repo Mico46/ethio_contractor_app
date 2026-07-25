@@ -6,10 +6,11 @@ import {
   HiOutlineCalculator,
   HiOutlinePlus,
   HiOutlineTrash,
+  HiOutlinePencilAlt,
   HiOutlineTable,
   HiOutlineClipboardList,
-  HiOutlineCurrencyDollar,
   HiOutlineSearch,
+  HiOutlineX,
 } from "react-icons/hi";
 
 const CATEGORIES = [
@@ -36,6 +37,9 @@ export default function BOQPage() {
   const [selectedSiteId, setSelectedSiteId] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // BOQ Item Edit state
+  const [editingBoqItem, setEditingBoqItem] = useState(null);
+
   // Calculator Form State
   const [formData, setFormData] = useState({
     itemNo: "1.1",
@@ -53,6 +57,7 @@ export default function BOQPage() {
 
   // Unit Rate Modal / Form state
   const [showRateForm, setShowRateForm] = useState(false);
+  const [editingRate, setEditingRate] = useState(null);
   const [rateForm, setRateForm] = useState({
     category: CATEGORIES[0],
     itemDescription: "",
@@ -130,7 +135,43 @@ export default function BOQPage() {
     setActiveTab("calculator");
   }
 
-  // Handle BOQ Item submit
+  // Start editing a BOQ item
+  function handleEditBoqClick(item) {
+    setEditingBoqItem(item);
+    setFormData({
+      itemNo: item.itemNo || "1.1",
+      category: item.category || CATEGORIES[0],
+      description: item.description || "",
+      unit: item.unit || "m³",
+      length: item.length !== null && item.length !== undefined ? item.length.toString() : "",
+      width: item.width !== null && item.width !== undefined ? item.width.toString() : "",
+      height: item.height !== null && item.height !== undefined ? item.height.toString() : "",
+      noOfMembers: (item.noOfMembers || 1).toString(),
+      quantity: (item.quantity || "").toString(),
+      rate: (item.rate || "").toString(),
+      wastageFactor: (item.wastageFactor || 5.0).toString(),
+    });
+    setActiveTab("calculator");
+  }
+
+  function cancelBoqEdit() {
+    setEditingBoqItem(null);
+    setFormData({
+      itemNo: "1.1",
+      category: CATEGORIES[0],
+      description: "",
+      unit: "m³",
+      length: "",
+      width: "",
+      height: "",
+      noOfMembers: "1",
+      quantity: "",
+      rate: "",
+      wastageFactor: "5.0",
+    });
+  }
+
+  // Handle BOQ Item submit (Create or Update)
   async function handleSubmitBoq(e) {
     e.preventDefault();
     const targetSiteId =
@@ -154,31 +195,23 @@ export default function BOQPage() {
     };
 
     try {
+      const isEdit = !!editingBoqItem;
+      const method = isEdit ? "PUT" : "POST";
+      const body = isEdit ? { id: editingBoqItem.id, ...payload } : payload;
+
       const res = await authFetch("/api/boq", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
-        toast.success("BOQ item added successfully!");
-        setFormData({
-          itemNo: "1.1",
-          category: CATEGORIES[0],
-          description: "",
-          unit: "m³",
-          length: "",
-          width: "",
-          height: "",
-          noOfMembers: "1",
-          quantity: "",
-          rate: "",
-          wastageFactor: "5.0",
-        });
+        toast.success(isEdit ? "BOQ item updated!" : "BOQ item added successfully!");
+        cancelBoqEdit();
         fetchData();
         setActiveTab("summary");
       } else {
-        toast.error("Failed to add BOQ item");
+        toast.error(isEdit ? "Failed to update item" : "Failed to add BOQ item");
       }
     } catch {
       toast.error("Error saving BOQ item");
@@ -203,35 +236,77 @@ export default function BOQPage() {
     }
   }
 
-  // Save Unit Rate
+  // Start editing standard unit rate
+  function handleEditRateClick(rate) {
+    setEditingRate(rate);
+    setRateForm({
+      category: rate.category || CATEGORIES[0],
+      itemDescription: rate.itemDescription || "",
+      unit: rate.unit || "m³",
+      standardRate: (rate.standardRate || "").toString(),
+      defaultWastageFactor: (rate.defaultWastageFactor || 5.0).toString(),
+    });
+    setShowRateForm(true);
+  }
+
+  function cancelRateEdit() {
+    setEditingRate(null);
+    setShowRateForm(false);
+    setRateForm({
+      category: CATEGORIES[0],
+      itemDescription: "",
+      unit: "m³",
+      standardRate: "",
+      defaultWastageFactor: "5.0",
+    });
+  }
+
+  // Save Unit Rate (Create or Update)
   async function handleSaveUnitRate(e) {
     e.preventDefault();
     try {
+      const isEdit = !!editingRate;
+      const method = isEdit ? "PUT" : "POST";
+      const body = {
+        ...(isEdit && { id: editingRate.id }),
+        category: rateForm.category,
+        itemDescription: rateForm.itemDescription,
+        unit: rateForm.unit,
+        standardRate: parseFloat(rateForm.standardRate) || 0,
+        defaultWastageFactor: parseFloat(rateForm.defaultWastageFactor) || 5.0,
+      };
+
       const res = await authFetch("/api/unit-rates", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: rateForm.category,
-          itemDescription: rateForm.itemDescription,
-          unit: rateForm.unit,
-          standardRate: parseFloat(rateForm.standardRate) || 0,
-          defaultWastageFactor: parseFloat(rateForm.defaultWastageFactor) || 5.0,
-        }),
+        body: JSON.stringify(body),
       });
+
       if (res.ok) {
-        toast.success("Standard unit rate added!");
-        setShowRateForm(false);
-        setRateForm({
-          category: CATEGORIES[0],
-          itemDescription: "",
-          unit: "m³",
-          standardRate: "",
-          defaultWastageFactor: "5.0",
-        });
+        toast.success(isEdit ? "Unit rate updated!" : "Standard unit rate added!");
+        cancelRateEdit();
         fetchData();
       }
     } catch {
       toast.error("Failed to save unit rate");
+    }
+  }
+
+  // Delete Unit Rate
+  async function handleDeleteRate(id) {
+    if (!confirm("Delete this standard unit rate?")) return;
+    try {
+      const res = await authFetch("/api/unit-rates", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        toast.success("Unit rate deleted!");
+        fetchData();
+      }
+    } catch {
+      toast.error("Delete failed");
     }
   }
 
@@ -297,7 +372,8 @@ export default function BOQPage() {
                 : "border-transparent text-muted-foreground hover:text-gray-900"
             }`}
           >
-            <HiOutlineCalculator className="w-4 h-4" /> BOQ Estimator & Calculator
+            <HiOutlineCalculator className="w-4 h-4" />{" "}
+            {editingBoqItem ? "Edit BOQ Item" : "BOQ Estimator & Calculator"}
           </button>
           <button
             onClick={() => setActiveTab("summary")}
@@ -332,9 +408,21 @@ export default function BOQPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Form */}
                 <div className="lg:col-span-2 card p-6">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <HiOutlineCalculator className="w-5 h-5 text-primary" /> Add BOQ Item & Calculate
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <HiOutlineCalculator className="w-5 h-5 text-primary" />
+                      {editingBoqItem ? `Editing Item #${editingBoqItem.itemNo}` : "Add BOQ Item & Calculate"}
+                    </h2>
+                    {editingBoqItem && (
+                      <button
+                        onClick={cancelBoqEdit}
+                        className="btn-outline text-xs px-2.5 py-1 text-danger border-danger hover:bg-danger hover:text-white"
+                      >
+                        Cancel Editing
+                      </button>
+                    )}
+                  </div>
+
                   <form onSubmit={handleSubmitBoq} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -481,10 +569,19 @@ export default function BOQPage() {
                       </div>
                     </div>
 
-                    <div className="pt-2">
-                      <button type="submit" className="btn-primary w-full py-3 font-bold text-base">
-                        Save BOQ Item to Project Database
+                    <div className="pt-2 flex gap-3">
+                      <button type="submit" className="btn-primary flex-1 py-3 font-bold text-base">
+                        {editingBoqItem ? "Update BOQ Item" : "Save BOQ Item to Project Database"}
                       </button>
+                      {editingBoqItem && (
+                        <button
+                          type="button"
+                          onClick={cancelBoqEdit}
+                          className="btn-outline px-5 py-3 font-semibold text-base"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </form>
                 </div>
@@ -618,13 +715,22 @@ export default function BOQPage() {
                                       {formatETB(gross)}
                                     </td>
                                     <td className="px-4 py-3 text-center">
-                                      <button
-                                        onClick={() => handleDeleteBoq(item.id)}
-                                        className="text-danger hover:text-red-800 p-1 rounded transition-colors"
-                                        title="Delete Item"
-                                      >
-                                        <HiOutlineTrash className="w-4 h-4 mx-auto" />
-                                      </button>
+                                      <div className="flex items-center justify-center gap-2">
+                                        <button
+                                          onClick={() => handleEditBoqClick(item)}
+                                          className="text-primary hover:text-emerald-800 p-1 rounded transition-colors"
+                                          title="Edit Item"
+                                        >
+                                          <HiOutlinePencilAlt className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteBoq(item.id)}
+                                          className="text-danger hover:text-red-800 p-1 rounded transition-colors"
+                                          title="Delete Item"
+                                        >
+                                          <HiOutlineTrash className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -656,20 +762,32 @@ export default function BOQPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setShowRateForm(true)}
+                    onClick={() => {
+                      setEditingRate(null);
+                      setRateForm({
+                        category: CATEGORIES[0],
+                        itemDescription: "",
+                        unit: "m³",
+                        standardRate: "",
+                        defaultWastageFactor: "5.0",
+                      });
+                      setShowRateForm(true);
+                    }}
                     className="btn-primary flex items-center gap-2 text-sm"
                   >
                     <HiOutlinePlus className="w-4 h-4" /> Add Standard Unit Rate
                   </button>
                 </div>
 
-                {/* Add Unit Rate Modal */}
+                {/* Add / Edit Unit Rate Modal */}
                 {showRateForm && (
                   <div className="card p-6 border-2 border-primary/30 animate-fade-in">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold text-gray-900">Add New Standard Unit Rate</h3>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {editingRate ? "Edit Standard Unit Rate" : "Add New Standard Unit Rate"}
+                      </h3>
                       <button
-                        onClick={() => setShowRateForm(false)}
+                        onClick={cancelRateEdit}
                         className="text-muted-foreground hover:text-gray-900 text-sm font-bold"
                       >
                         ✕ Close
@@ -751,11 +869,11 @@ export default function BOQPage() {
                       </div>
                       <div className="sm:col-span-2 flex gap-3 pt-2">
                         <button type="submit" className="btn-primary">
-                          Save Unit Rate
+                          {editingRate ? "Update Unit Rate" : "Save Unit Rate"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setShowRateForm(false)}
+                          onClick={cancelRateEdit}
                           className="btn-outline"
                         >
                           Cancel
@@ -786,7 +904,7 @@ export default function BOQPage() {
                           <th className="px-4 py-3 text-left font-semibold text-gray-700">Unit</th>
                           <th className="px-4 py-3 text-right font-semibold text-gray-700">Standard Rate (ETB)</th>
                           <th className="px-4 py-3 text-right font-semibold text-gray-700">Default Waste %</th>
-                          <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
+                          <th className="px-4 py-3 text-center font-semibold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -813,12 +931,28 @@ export default function BOQPage() {
                                 {rate.defaultWastageFactor}%
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <button
-                                  onClick={() => applyStandardRate(rate)}
-                                  className="btn-outline text-xs px-3 py-1 font-semibold text-primary hover:bg-primary hover:text-white"
-                                >
-                                  Use Rate →
-                                </button>
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => applyStandardRate(rate)}
+                                    className="btn-outline text-xs px-2.5 py-1 font-semibold text-primary hover:bg-primary hover:text-white"
+                                  >
+                                    Use Rate →
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditRateClick(rate)}
+                                    className="text-primary hover:text-emerald-800 p-1 rounded transition-colors"
+                                    title="Edit Rate"
+                                  >
+                                    <HiOutlinePencilAlt className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRate(rate.id)}
+                                    className="text-danger hover:text-red-800 p-1 rounded transition-colors"
+                                    title="Delete Rate"
+                                  >
+                                    <HiOutlineTrash className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))
