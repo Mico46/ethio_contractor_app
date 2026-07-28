@@ -123,7 +123,7 @@ function OverviewTab({ site, expenses, tasks, materials, formatETB, getUserName 
         </div>
         <div className="card p-4">
           <p className="text-xs text-muted-foreground uppercase font-medium">Progress</p>
-          <p className="text-xl font-bold text-primary">{site.progress || 0}%</p>
+          <p className="text-xl font-bold text-primary">{site.progress *100 || 0}%</p>
         </div>
         <div className="card p-4">
           <p className="text-xs text-muted-foreground uppercase font-medium">Tasks</p>
@@ -133,7 +133,7 @@ function OverviewTab({ site, expenses, tasks, materials, formatETB, getUserName 
       <div className="card p-4">
         <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Progress</p>
         <div className="w-full bg-gray-100 rounded-full h-3">
-          <div className="bg-primary h-3 rounded-full transition-all" style={{ width: `${site.progress || 0}%` }} />
+          <div className="bg-primary h-3 rounded-full transition-all" style={{ width: `${site.progress*100 || 0}%` }} />
         </div>
       </div>
       <div className="card p-4 grid grid-cols-2 gap-4 text-sm">

@@ -18,6 +18,8 @@ export default function Sites() {
   const [showForm, setShowForm] = useState(false);
   const [editingSite, setEditingSite] = useState(null);
   const [search, setSearch] = useState("");
+  const [users, setUsers] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     clientName: "",
@@ -30,8 +32,15 @@ export default function Sites() {
     assignedTo: "",
   });
 
-  useEffect(() => { fetchSites(); }, []);
+  useEffect(() => { fetchSites(); fetchUsers();}, []);
 
+  async function fetchUsers() {
+    try {
+      const res = await authFetch("/api/users");
+      if (res.ok) setUsers(await res.json());
+    } catch { toast.error("Failed to fetch users"); }
+    finally { setLoading(false); }
+  }
   async function fetchSites() {
     try {
       
@@ -81,6 +90,10 @@ export default function Sites() {
     setShowForm(true);
   }
 
+const getUserName = (id) => {
+  const user = users.find((u) => u.id === id);
+  return user ? user.name : "Unknown";
+}
   const formatETB = (amount) =>
     new Intl.NumberFormat("en-ET", { style: "currency", currency: "ETB" }).format(amount);
 
@@ -126,11 +139,17 @@ export default function Sites() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required className="input" />
+                <input type="date" name="startDate" value={formData.startDate.split("T")[0]} onChange={handleChange} required className="input" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Target End Date</label>
-                <input type="date" name="targetEndDate" value={formData.targetEndDate} onChange={handleChange} required className="input" />
+                <input type="date" name="targetEndDate" value={formData.targetEndDate.split("T")[0]} onChange={handleChange} required className="input" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Supervisor</label>
+                <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className="input">
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}({u.role})</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -140,7 +159,7 @@ export default function Sites() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Progress (%)</label>
-                <input type="number" name="progress" value={formData.progress} onChange={handleChange} min="0" max="100" className="input" />
+                <input type="number" name="progress" value={formData.progress} onChange={handleChange} min="0" max="1" step={0.01} className="input" />
               </div>
               <div className="sm:col-span-2 flex gap-2">
                 <button type="submit" className="btn-primary">{editingSite ? "Update" : "Create"}</button>

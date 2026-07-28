@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { authFetch } from "@/lib/api-client";
 import DashboardLayout from "@/components/dashboard-layout";
 import toast from "react-hot-toast";
+
 import {
   HiOutlinePlus,
   HiOutlineCheckCircle,
@@ -14,8 +15,8 @@ import {
 
 // Flutter SiteTask model: { id, siteId, title, assignedTo, dueDate, priority, status, syncStatus }
 
-const PRIORITIES = ["low", "medium", "high", "urgent"];
-const STATUSES = ["pending", "in_progress", "completed", "blocked"];
+const PRIORITIES = ["Low", "Medium", "High", "Urgent","Critical"];
+const STATUSES = ["Pending", "In Progress", "Completed", "Blocked"];
 
 const PRIORITY_STYLE = { low: "badge-info", medium: "badge-primary", high: "badge-warning", urgent: "badge-danger" };
 const STATUS_STYLE = { pending: "badge-warning", in_progress: "badge-primary", completed: "badge-success", blocked: "badge-danger" };
@@ -129,6 +130,7 @@ export default function Tasks() {
             <option value="all">All Status</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
           </select>
+          <p>{filterStatus}</p>
           <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="input w-auto">
             <option value="all">All Priority</option>
             {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -176,7 +178,7 @@ export default function Tasks() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className="input" />
+                <input type="date" name="dueDate" value={formData.dueDate.split("T")[0]} onChange={handleChange} className="input" />
               </div>
               <div className="flex items-end gap-2">
                 <button type="submit" className="btn-primary">{editingTask ? "Update" : "Create"}</button>
@@ -196,6 +198,7 @@ export default function Tasks() {
           <div className="space-y-3">
             {filtered.map((task) => {
               const StatusIcon = STATUS_ICON[task.status] || HiOutlineClock;
+              //alert(task.priority)
               return (
                 <div key={task.id} className="card card-hover p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">

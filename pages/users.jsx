@@ -21,9 +21,18 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState(null);
   const [search, setSearch] = useState("");
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", role: "worker", assignedSite: "" });
+ const [sites,setSites]= useState([]);
+ useEffect(() => { fetchUsers();fetchSites(); }, []);
 
-  useEffect(() => { fetchUsers(); }, []);
-
+ async function fetchSites() {
+  try {
+    const res = await authFetch("/api/sites");
+    if (res.ok) setSites(await res.json());
+  } catch (error) {
+    toast.error("Failed to fetch sites");
+    console.log(error);
+  }
+}
   async function fetchUsers() {
     try {
       const res = await authFetch("/api/users");
@@ -62,7 +71,7 @@ export default function Users() {
     setFormData({ name: user.name || "", email: user.email || "", phone: user.phone || "", role: user.role || "worker", assignedSite: user.assignedSite || "" });
     setShowForm(true);
   }
-
+  const getSiteName = (siteId) => sites.find((s) => s.id === siteId)?.name || "Not Assigned";
   const filtered = users.filter((u) =>
     search ? u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()) : true
   );
@@ -99,6 +108,17 @@ export default function Users() {
                 <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+251..." className="input" />
               </div>
               <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Site</label>
+  <select name="assignedSite" value={formData.assignedSite} onChange={handleChange} className="input">
+    <option value="">Select Site</option>
+    {sites.map((s) => (
+      <option key={s.id} value={s.id}>
+        {s.name}
+      </option>
+    ))}
+  </select>
+</div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select name="role" value={formData.role} onChange={handleChange} className="input">
                   {ROLES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
@@ -127,6 +147,7 @@ export default function Users() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Role</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Phone</th>
+                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Assigned Site</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -137,6 +158,7 @@ export default function Users() {
                       <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
                       <td className="px-4 py-3"><span className={`badge ${ROLE_STYLE[user.role] || "badge-primary"}`}>{user.role}</span></td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{user.phone || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{getSiteName(user.assignedSite)}</td>
                       <td className="px-4 py-3 text-sm space-x-2">
                         <button onClick={() => handleEdit(user)} className="text-primary hover:text-primary-dark font-medium">Edit</button>
                         <button onClick={() => handleDelete(user.id)} className="text-danger hover:text-red-700 font-medium">Delete</button>
@@ -158,6 +180,7 @@ export default function Users() {
                     <div>
                       <h3 className="font-semibold text-gray-900">{user.name}</h3>
                       <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{getSiteName(user.assignedSite)}</p>
                     </div>
                     <span className={`badge ${ROLE_STYLE[user.role] || "badge-primary"}`}>{user.role}</span>
                   </div>
